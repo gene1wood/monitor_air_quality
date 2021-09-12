@@ -1,5 +1,0 @@
-KEY: api key you want to use goes here  # This is the key used to talk to the API you want to submit data to
-SALT: the salt you want to use goes here  # This is the salt used when hashing the key
-URL: https://example.com/air-quality  # The URL of the API to submit data to
-PURPLE_AIR_KEY: ABCDEFGHIJKLMNOP  # This is given by purpleair
-PURPLE_AIR_DEVICE_ID: 12345  # The purple air device for outdoor data
