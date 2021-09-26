@@ -10,7 +10,7 @@ with open(path.join(here, 'README.md'), encoding='utf-8') as f:
 
 setup(
     name='monitor_air_quality',  # Required
-    version='2.0.0',  # Required
+    version='2.0.1',  # Required
     description='Read data from sds011 sensor, gather purpleair and notion data and POST to an API',  # Optional
     long_description=long_description,  # Optional
     long_description_content_type='text/markdown',  # Optional (see note above)
