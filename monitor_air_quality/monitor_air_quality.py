@@ -373,14 +373,13 @@ def main():
     parser.epilog = epilog
     args = parser.parse_args()
 
-    if args.output != 'print':
-        if args.output == 'post':
-            log_level = logging.INFO
-        elif args.output in ['debug', 'info']:
-            log_level = getattr(logging, args.output.upper())
-        else:
-            log_level = logging.ERROR
-        logging.basicConfig(level=log_level)
+    if args.output == 'post':
+        log_level = logging.INFO
+    elif args.output in ['debug', 'info']:
+        log_level = getattr(logging, args.output.upper())
+    else:  # print
+        log_level = logging.CRITICAL
+    logging.basicConfig(level=log_level)
     logging.debug(f"Argument passed in were {args}")
 
     xdg_state_home().mkdir(parents=True, exist_ok=True)
