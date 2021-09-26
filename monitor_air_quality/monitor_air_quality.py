@@ -218,7 +218,7 @@ def gather_data(parser, args, state):
     data = dict()
     data['dt'] = datetime.now().isoformat()
 
-    if 'command' in args:
+    if 'command' in args and args.command:
         for command in args.command:
             completed_process = subprocess.run(command, capture_output=True, text=True, shell=True)
             stdout = completed_process.stdout
@@ -233,13 +233,13 @@ def gather_data(parser, args, state):
                         data[location] = {}
                     data[location].update(result[location])
             logging.info(f"Command executed : {command} : {result}")
-    if 'fetch_local_aqi' in args:
+    if 'fetch_local_aqi' in args and args.fetch_local_aqi:
         result = get_air_quality()
         if args.fetch_local_aqi not in data:
             data[args.fetch_local_aqi] = {}
         data[args.fetch_local_aqi].update(result)
         logging.info(f"Local air quality data fetched {result}")
-    if 'fetch_notion_temperature' in args:
+    if 'fetch_notion_temperature' in args and args.fetch_notion_temperature:
         result = get_notion_temperature(args.notion_sensor)
         # We're ignoring the datestamp of the temperature reading, hoping it's near to now
         if args.fetch_notion_temperature not in data:
@@ -248,7 +248,7 @@ def gather_data(parser, args, state):
             'temp_f': f"{result['temp_f']:.2f}"
         })
         logging.info(f"Notion temperature data fetched : {result['temp_f']:.2f}")
-    if 'fetch_purpleair_data' in args:
+    if 'fetch_purpleair_data' in args and args.fetch_purpleair_data:
         result = get_outdoor_data()
         if args.fetch_purpleair_data not in data:
             data[args.fetch_purpleair_data] = {}
@@ -259,7 +259,7 @@ def gather_data(parser, args, state):
     if 'alerts' not in state:
         state['alerts'] = {}
 
-    if 'alert' in args:
+    if 'alert' in args and args.alert:
         for alert in args.alert:
             fields = alert.split(',')
             if len(fields) > 3:
@@ -294,7 +294,7 @@ def gather_data(parser, args, state):
                     state['alerts'][alert]['last_transition'] = "exceed threshold"
                 else:
                     logging.info(f"Metric {location} {metric} {data[location][metric]} continues to not exceed {threshold}. No transition occurred")
-    if 'alert_on_temperature_inversion' in args:
+    if 'alert_on_temperature_inversion' in args and args.alert_on_temperature_inversion:
         alert_on_temperature_inversion(parser, args, data, state)
     if args.output == 'print':
         print(json.dumps(data, indent=4))
