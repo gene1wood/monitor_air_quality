@@ -226,7 +226,12 @@ def gather_data(parser, args, state):
     if args.command:
         for command in args.command:
             completed_process = subprocess.run(command, capture_output=True, text=True, shell=True)
-            result = json.loads(completed_process.stdout)
+            stdout = completed_process.stdout
+            try:
+                result = json.loads(stdout)
+            except json.decoder.JSONDecodeError:
+                logging.error(f"Command didn't return JSON : \"{command}\" with result \"{stdout}\"")
+                result = dict()
             for location in result.keys():
                 if type(result[location]) == dict:
                     if location not in data:
