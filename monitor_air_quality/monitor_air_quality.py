@@ -32,17 +32,12 @@ PURPLE_AIR_TEMP_OFFSET = -9.43 + OBSERVED_ADDITIONAL_PURPLE_AIR_TEMP_OFFSET
 filename = 'monitor_air_quality_config.yaml'
 dirs = [xdg_config_home()]
 dirs.extend((xdg_config_dirs()))
-try:
-    config_file = next(PosixPath(x, filename) for x in dirs if PosixPath(x, filename).exists())
-except StopIteration:
-    print(
-        f"Unable to find configuration file {filename} either in "
-        f"{xdg_config_home()} or in {xdg_config_dirs()}. Please create a "
-        f"config file first. See https://github.com/gene1wood/monitor_air_quality/blob/master/monitor_air_quality/monitor_air_quality_config.example.yaml")
-    exit(1)
-
-with config_file.open() as f:
-    config = yaml.safe_load(f)
+config_files = [PosixPath(x, filename) for x in dirs if PosixPath(x, filename).exists()]
+if not config_files:
+    config = dict()
+else:
+    with config_files[0].open() as f:
+        config = yaml.safe_load(f)
 
 def celsius_to_fahrenheit(degrees_c):
     return 32.0 + (float(degrees_c) * 1.8)
@@ -223,7 +218,7 @@ def gather_data(parser, args, state):
     data = dict()
     data['dt'] = datetime.now().isoformat()
 
-    if args.command:
+    if 'command' in args:
         for command in args.command:
             completed_process = subprocess.run(command, capture_output=True, text=True, shell=True)
             stdout = completed_process.stdout
@@ -238,13 +233,13 @@ def gather_data(parser, args, state):
                         data[location] = {}
                     data[location].update(result[location])
             logging.info(f"Command executed : {command} : {result}")
-    if args.fetch_local_aqi:
+    if 'fetch_local_aqi' in args:
         result = get_air_quality()
         if args.fetch_local_aqi not in data:
             data[args.fetch_local_aqi] = {}
         data[args.fetch_local_aqi].update(result)
         logging.info(f"Local air quality data fetched {result}")
-    if args.fetch_notion_temperature:
+    if 'fetch_notion_temperature' in args:
         result = get_notion_temperature(args.notion_sensor)
         # We're ignoring the datestamp of the temperature reading, hoping it's near to now
         if args.fetch_notion_temperature not in data:
@@ -253,7 +248,7 @@ def gather_data(parser, args, state):
             'temp_f': f"{result['temp_f']:.2f}"
         })
         logging.info(f"Notion temperature data fetched : {result['temp_f']:.2f}")
-    if args.fetch_purpleair_data:
+    if 'fetch_purpleair_data' in args:
         result = get_outdoor_data()
         if args.fetch_purpleair_data not in data:
             data[args.fetch_purpleair_data] = {}
@@ -264,7 +259,7 @@ def gather_data(parser, args, state):
     if 'alerts' not in state:
         state['alerts'] = {}
 
-    if args.alert:
+    if 'alert' in args:
         for alert in args.alert:
             fields = alert.split(',')
             if len(fields) > 3:
@@ -299,7 +294,7 @@ def gather_data(parser, args, state):
                     state['alerts'][alert]['last_transition'] = "exceed threshold"
                 else:
                     logging.info(f"Metric {location} {metric} {data[location][metric]} continues to not exceed {threshold}. No transition occurred")
-    if args.alert_on_temperature_inversion:
+    if 'alert_on_temperature_inversion' in args:
         alert_on_temperature_inversion(parser, args, data, state)
     if args.output == 'print':
         print(json.dumps(data, indent=4))
@@ -317,6 +312,7 @@ def main():
     --alert-on-temperature-inversion upstairs,outdoor --notion-sensor "Upstairs hall Sensor" --fetch-notion-temperature upstairs --fetch-purpleair-data outdoor
     --fetch-local-aqi basement --notion-sensor "Upstairs hall Sensor" --fetch-notion-temperature upstairs --fetch-purpleair-data outdoor --command "ssh -i /home/gene/Documents/monitor_air_quality/id_rsa pi@192.168.0.31 true" --alert upstairs,pm25,12 --alert-on-temperature-inversion upstairs,outdoor
     '''
+    epilog = textwrap.dedent(epilog)
     usage_suffix = []
     parser = argparse.ArgumentParser(
         description='Gather and post or print air quality and temperature data',
@@ -372,9 +368,13 @@ def main():
         '--output', choices=choices, default='print',
         help='whether to print or post the results or give debug or info output (default: print)')
 
-    epilog = textwrap.dedent(epilog)
     if usage_suffix:
-        epilog += "Missing configuration:\n" + "\n".join([f"    {x}" for x in usage_suffix])
+        epilog += "\nMissing configuration options:\n" + "\n".join([f"    - {x}" for x in usage_suffix])
+        if not config_files:
+            epilog += (
+                f"\n    Unable to find configuration file \"{filename}\" "
+                f"either in any of {xdg_config_home()}, {', '.join([str(x) for x in xdg_config_dirs()])}. "
+                f"Please create a config file first. See https://github.com/gene1wood/monitor_air_quality/blob/master/monitor_air_quality/monitor_air_quality_config.example.yaml")
     parser.epilog = epilog
     args = parser.parse_args()
 
