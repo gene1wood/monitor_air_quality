@@ -1,6 +1,6 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
-
+# testing auto deployment
 import time
 import subprocess
 import argparse
@@ -100,7 +100,11 @@ def get_air_quality():
     # https://cdn.sparkfun.com/assets/parts/1/2/2/7/5/Laser_Dust_Sensor_Control_Protocol_V1.3.pdf
 
     # Start in reporting mode : query/home/pi/.local/bin
+    # this is the way the USB port was specified
     sensor = SDS011("/dev/ttyUSB0", use_query_mode=True)
+    # this is my attempted mod, 2021-10-05
+    #    sensor = SDS011("/dev/ttyS0", baudrate=9600, use_query_mode=True)
+    #
     sensor.set_work_period(work_time=0)  # work_time is continuous
     logging.debug('waking sensor')
     sensor.sleep(sleep=False)  # wake sensor
